@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+#
+# ccprofile — Claude Code multi-subscription profile manager.
+#
+# https://github.com/leostudio/ccprofile
+set -euo pipefail
+
+readonly CCPROFILE_VERSION="0.1.0"
+
+# Resolve the lib directory relative to this script, following symlinks.
+resolve_script_dir() {
+  local src="${BASH_SOURCE[0]}"
+  while [[ -L "$src" ]]; do
+    local dir
+    dir=$(cd -P "$(dirname "$src")" && pwd)
+    src=$(readlink "$src")
+    [[ "$src" != /* ]] && src="$dir/$src"
+  done
+  cd -P "$(dirname "$src")" && pwd
+}
+
+SCRIPT_DIR=$(resolve_script_dir)
+LIB_DIR="$SCRIPT_DIR/../lib"
+
+# Allow override for dev/test: CCPROFILE_LIB_DIR=./lib bin/ccprofile ...
+LIB_DIR="${CCPROFILE_LIB_DIR:-$LIB_DIR}"
+
+# shellcheck source=../lib/utils.sh
+source "$LIB_DIR/utils.sh"
+# shellcheck source=../lib/shared-lists.sh
+source "$LIB_DIR/shared-lists.sh"
+# shellcheck source=../lib/commands/init.sh
+source "$LIB_DIR/commands/init.sh"
+# shellcheck source=../lib/commands/list.sh
+source "$LIB_DIR/commands/list.sh"
+# shellcheck source=../lib/commands/sync.sh
+source "$LIB_DIR/commands/sync.sh"
+# shellcheck source=../lib/commands/doctor.sh
+source "$LIB_DIR/commands/doctor.sh"
+# shellcheck source=../lib/commands/shared-list.sh
+source "$LIB_DIR/commands/shared-list.sh"
+# shellcheck source=../lib/commands/rm.sh
+source "$LIB_DIR/commands/rm.sh"
+
+print_help() {
+  cat <<EOF
+ccprofile v$CCPROFILE_VERSION — Claude Code multi-subscription profile manager.
+
+Usage:
+  ccprofile init <name> [flags]   Create a new profile sharing toolchain config
+  ccprofile list                  List all profiles and their login status
+  ccprofile sync <name>           Re-sync symlinks from main profile
+  ccprofile doctor <name>         Verify profile health
+  ccprofile shared-list           Show the classification (shared vs isolated)
+  ccprofile rm <name>             Delete a profile
+  ccprofile help                  Show this help
+  ccprofile version               Show version
+
+Run 'ccprofile <command> --help' for command-specific options.
+
+Why this tool exists:
+  Claude Code stores OAuth tokens, subscription state, and ~20 auth-adjacent
+  caches under a single config dir. Running multiple subscriptions means
+  constant logout/login — OR setting CLAUDE_CONFIG_DIR per profile and
+  managing which files to share.
+
+  ccprofile automates the sharing with a classification derived from
+  Claude Code source analysis, so you get toolchain/history/projects sharing
+  without leaking account state.
+
+  See 'ccprofile shared-list' for the full classification.
+EOF
+}
+
+main() {
+  local cmd="${1:-help}"
+  shift || true
+
+  case "$cmd" in
+    init)           cmd_init "$@" ;;
+    list|ls)        cmd_list "$@" ;;
+    sync)           cmd_sync "$@" ;;
+    doctor)         cmd_doctor "$@" ;;
+    shared-list)    cmd_shared_list "$@" ;;
+    rm|remove)      cmd_rm "$@" ;;
+    help|-h|--help) print_help ;;
+    version|--version) printf 'ccprofile %s\n' "$CCPROFILE_VERSION" ;;
+    *)
+      err "Unknown command: $cmd"
+      info ""
+      print_help
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"

@@ -1,0 +1,143 @@
+# shellcheck shell=bash
+#
+# File classification lists for Claude Code config directories.
+#
+# These lists are derived from source-code analysis of Claude Code:
+#   - src/utils/env.ts              → getGlobalClaudeFile()
+#   - src/utils/envUtils.ts         → getClaudeConfigHomeDir()
+#   - src/utils/secureStorage/      → OAuth token storage
+#   - src/utils/config.ts           → saveGlobalConfig()
+#   - src/services/mcp/client.ts    → mcp-needs-auth-cache.json
+#
+# Each item below is either safely shareable across profiles (symlink) or
+# must stay independent per profile (real file/dir).
+
+# ─── SHARE: toolchain configuration ──────────────────────────────────────
+# Always safe to share. This is the primary reason to run multiple profiles.
+SHARED_TOOLCHAIN=(
+  "settings.json"
+  "CLAUDE.md"
+  "commands"
+  "skills"
+  "plugins"
+  "statusline-command.sh"
+  ".gitignore"
+)
+
+# ─── SHARE: generic caches ───────────────────────────────────────────────
+# No per-account state. Sharing saves disk and avoids re-downloads.
+SHARED_CACHES=(
+  "cache"
+  "chrome"
+  "ide"
+)
+
+# ─── SHARE: personal work content (opt-out via --no-share-*) ─────────────
+# Safe to share when both profiles belong to the same person.
+# Can be made independent via init flags.
+SHARED_PERSONAL=(
+  "projects"            # --no-share-projects     (trust, MCP approvals)
+  "history.jsonl"       # --no-share-history      (prompt history)
+  "file-history"        # --no-share-file-history (Edit undo snapshots)
+  "paste-cache"
+  "plans"
+  "todos"
+  "shell-snapshots"
+  "session-env"
+  "backups"
+)
+
+# ─── ISOLATE: account identity ────────────────────────────────────────────
+# Contain oauthAccount / subscriptionType / OAuth tokens. Never symlink.
+ISOLATED_IDENTITY=(
+  ".claude.json"        # src/utils/env.ts:14 getGlobalClaudeFile()
+  ".credentials.json"   # src/utils/secureStorage/plainTextStorage.ts:15
+  "config.json"         # legacy fallback in getGlobalClaudeFile()
+)
+
+# ─── ISOLATE: auth-adjacent caches ────────────────────────────────────────
+# Key finding from source-code analysis — other multi-account tools miss these.
+# These caches are keyed off account/org/subscription and WILL cause
+# confusing bugs if shared.
+ISOLATED_AUTH_ADJACENT=(
+  "stats-cache.json"          # per-account usage cache
+  "statsig"                   # feature-flag bucketing by accountID
+  "usage-data"                # local usage tracking
+  "settings-cache.json"       # remoteManagedSettings cache
+  "policyLimits-cache.json"   # policy limits cache
+  "mcp-needs-auth-cache.json" # src/services/mcp/client.ts:262
+)
+
+# ─── ISOLATE: concurrent-run state ────────────────────────────────────────
+# PID files, locks, per-session logs. Two profiles running concurrently
+# would collide if these were shared.
+ISOLATED_CONCURRENT=(
+  "sessions"
+  "tasks"
+  "debug"
+  "log"
+)
+
+# ─── Helper: resolve share list given --no-share-* flags ──────────────────
+# Args:
+#   $1 — "yes"/"no" for share-projects
+#   $2 — "yes"/"no" for share-history
+#   $3 — "yes"/"no" for share-file-history
+# Prints the effective share list (one item per line).
+resolve_share_list() {
+  local share_projects="$1"
+  local share_history="$2"
+  local share_file_history="$3"
+
+  local item
+  for item in "${SHARED_TOOLCHAIN[@]}" "${SHARED_CACHES[@]}"; do
+    printf '%s\n' "$item"
+  done
+  for item in "${SHARED_PERSONAL[@]}"; do
+    case "$item" in
+      projects)     [[ "$share_projects"     == "yes" ]] && printf '%s\n' "$item" ;;
+      history.jsonl)[[ "$share_history"      == "yes" ]] && printf '%s\n' "$item" ;;
+      file-history) [[ "$share_file_history" == "yes" ]] && printf '%s\n' "$item" ;;
+      *)            printf '%s\n' "$item" ;;
+    esac
+  done
+}
+
+# Prints all items that MUST be independent (real files/dirs).
+all_isolated_items() {
+  local item
+  for item in "${ISOLATED_IDENTITY[@]}" "${ISOLATED_AUTH_ADJACENT[@]}" "${ISOLATED_CONCURRENT[@]}"; do
+    printf '%s\n' "$item"
+  done
+}
+
+# Prints every item classified in any of the six lists (one per line).
+all_known_items() {
+  local item
+  for item in \
+    "${SHARED_TOOLCHAIN[@]}" \
+    "${SHARED_CACHES[@]}" \
+    "${SHARED_PERSONAL[@]}" \
+    "${ISOLATED_IDENTITY[@]}" \
+    "${ISOLATED_AUTH_ADJACENT[@]}" \
+    "${ISOLATED_CONCURRENT[@]}"; do
+    printf '%s\n' "$item"
+  done
+}
+
+# is_known <item> — true if item is classified in any of the six lists.
+# Note: linear scan rather than associative-array lookup, because this project
+# targets macOS's default bash 3.2 which has no associative arrays.
+is_known() {
+  local needle="$1" item
+  for item in \
+    "${SHARED_TOOLCHAIN[@]}" \
+    "${SHARED_CACHES[@]}" \
+    "${SHARED_PERSONAL[@]}" \
+    "${ISOLATED_IDENTITY[@]}" \
+    "${ISOLATED_AUTH_ADJACENT[@]}" \
+    "${ISOLATED_CONCURRENT[@]}"; do
+    [[ "$item" == "$needle" ]] && return 0
+  done
+  return 1
+}
