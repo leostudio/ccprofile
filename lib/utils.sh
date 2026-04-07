@@ -89,6 +89,34 @@ except Exception:
 PY
 }
 
+# Detect whether the user has wrapped `claude` as a shell function in
+# their shell config. This is a heuristic: we grep common rc files for
+# an uncommented function definition. Functions (unlike aliases) survive
+# `command claude`-style invocations only when the wrapper *itself* calls
+# `command claude`, so users who inject proxy/mTLS/env vars via a function
+# need to define new profiles as functions too — otherwise our suggested
+# alias silently strips their wrapper.
+#
+# Prints the matching rc file path on stdout and returns 0 if detected,
+# returns 1 otherwise. Respects $(ccp_home) for test overrides.
+detect_claude_function_wrapper() {
+  local home rc file
+  home=$(ccp_home)
+  for rc in .zshrc .bashrc .bash_profile .zprofile; do
+    file="$home/$rc"
+    [[ -f "$file" ]] || continue
+    # Match uncommented lines defining `claude` as a function, either
+    #   claude()  { ... }      /  claude () { ... }
+    # or
+    #   function claude() { } /  function claude { } /  function claude{
+    if grep -qE '^[[:space:]]*(claude[[:space:]]*\(\)|function[[:space:]]+claude([[:space:]]|\{|\())' "$file" 2>/dev/null; then
+      printf '%s' "$file"
+      return 0
+    fi
+  done
+  return 1
+}
+
 # Check if a claude config dir appears to have an OAuth account.
 # $1 = config dir path. Returns 0 if logged in, 1 otherwise.
 is_logged_in() {

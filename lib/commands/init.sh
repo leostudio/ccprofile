@@ -75,12 +75,29 @@ cmd_init() {
   info "Created $created symlinks, skipped $skipped items."
   info ""
   info "$(bold "Next steps:")"
-  info "  1. Add this alias to your shell config (~/.zshrc or ~/.bashrc):"
   info ""
-  printf '       alias claude-%s=%sCLAUDE_CONFIG_DIR=~/.claude-%s command claude%s\n' \
-    "$name" "'" "$name" "'"
-  info ""
-  hint "     Note: 'command claude' avoids NVM/path issues when upgrading Node."
+
+  local wrapper_file
+  if wrapper_file=$(detect_claude_function_wrapper); then
+    info "  1. Detected: 'claude' is a shell function in $wrapper_file"
+    info "     (e.g. to inject proxy / mTLS / env vars)."
+    info "     Define the new profile as a FUNCTION so it inherits the wrapper:"
+    info ""
+    printf '       claude-%s() { env "${_claude_proxy_env[@]}" CLAUDE_CONFIG_DIR="$HOME/.claude-%s" command claude "$@" }\n' \
+      "$name" "$name"
+    info ""
+    hint "     Replace _claude_proxy_env with whatever var your existing claude() uses."
+    hint "     Don't use a plain alias: 'command claude' skips functions, which would"
+    hint "     strip your proxy/mTLS wrapper and cause OAuth timeouts on first login."
+  else
+    info "  1. Add this alias to your shell config (~/.zshrc or ~/.bashrc):"
+    info ""
+    printf '       alias claude-%s=%sCLAUDE_CONFIG_DIR=~/.claude-%s command claude%s\n' \
+      "$name" "'" "$name" "'"
+    info ""
+    hint "     Note: 'command claude' avoids NVM/path issues when upgrading Node."
+  fi
+
   info ""
   info "  2. Reload your shell, then run: $(bold "claude-$name")"
   info "     First run will trigger the login flow for your second subscription."

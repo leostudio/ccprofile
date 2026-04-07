@@ -101,6 +101,38 @@ ccprofile rm work           # Delete a profile (requires confirmation; Keychain 
 
 ## Troubleshooting
 
+### OAuth login times out on a new profile (15s)
+
+**Symptom**: browser auth succeeds, but terminal shows `OAuth error: timeout of 15000ms exceeded`. Default profile works fine.
+
+**Cause**: the user's `claude` is a shell **function** (not the raw binary), usually to inject `HTTPS_PROXY`/mTLS/custom env vars. ccprofile's suggested alias uses `command claude`, which bypasses functions — this is intentional for NVM safety, but it also strips the proxy wrapper. The new profile has no cached token, so token exchange hits `platform.claude.com` directly without the proxy and times out.
+
+**How to detect**: ask the user to run `declare -f claude`. If it prints a function body, they're in this situation.
+
+**Fix**: replace the suggested alias with a function that reuses the same env wrapper. Example for a user whose `.zshrc` already has:
+
+```zsh
+_claude_proxy_env=(
+  HTTPS_PROXY=http://127.0.0.1:7897
+  HTTP_PROXY=http://127.0.0.1:7897
+  # ...
+)
+claude() { env "${_claude_proxy_env[@]}" command claude "$@" }
+```
+
+Add:
+
+```zsh
+claude-work() { env "${_claude_proxy_env[@]}" CLAUDE_CONFIG_DIR="$HOME/.claude-work" command claude "$@" }
+```
+
+Key points:
+- **Function**, not alias — so it composes the same way as the original `claude()` wrapper
+- `CLAUDE_CONFIG_DIR` passed through `env` (or inline before `command claude`) — picked up by Claude Code
+- Still `command claude` at the end so it executes the binary, not the `claude()` function recursively
+
+**Important**: always check `declare -f claude` before recommending the default alias. If the user has a function wrapper, recommend the function form up front instead of the alias.
+
 ### "Main profile not logged in"
 
 The tool refuses to `init` if `~/.claude/.claude.json` has no `oauthAccount.emailAddress`. Run `claude` and complete login first.

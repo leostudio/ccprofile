@@ -112,6 +112,83 @@ test_init_rejects_when_main_missing() {
   _teardown
 }
 
+test_init_suggests_alias_when_no_wrapper() {
+  _setup
+  # No shell config files at all — should get the plain alias suggestion
+  local output
+  output=$(_run init b 2>&1)
+  if ! printf '%s\n' "$output" | grep -q "alias claude-b="; then
+    echo "expected alias suggestion, got:"
+    printf '%s\n' "$output"
+    _teardown; return 1
+  fi
+  if printf '%s\n' "$output" | grep -q "Detected: 'claude' is a shell function"; then
+    echo "should not report wrapper detection when none exists"
+    _teardown; return 1
+  fi
+  _teardown
+}
+
+test_init_detects_claude_function_wrapper_zshrc() {
+  _setup
+  cat > "$TEST_HOME/.zshrc" <<'ZSH'
+_claude_proxy_env=(HTTPS_PROXY=http://127.0.0.1:7897)
+claude() { env "${_claude_proxy_env[@]}" command claude "$@" }
+ZSH
+  local output
+  output=$(_run init b 2>&1)
+  if ! printf '%s\n' "$output" | grep -q "Detected: 'claude' is a shell function"; then
+    echo "expected wrapper detection, got:"
+    printf '%s\n' "$output"
+    _teardown; return 1
+  fi
+  if ! printf '%s\n' "$output" | grep -q "claude-b() { env"; then
+    echo "expected function-form suggestion, got:"
+    printf '%s\n' "$output"
+    _teardown; return 1
+  fi
+  if printf '%s\n' "$output" | grep -q "alias claude-b="; then
+    echo "should not suggest alias when function wrapper detected"
+    _teardown; return 1
+  fi
+  _teardown
+}
+
+test_init_detects_function_keyword_wrapper() {
+  _setup
+  cat > "$TEST_HOME/.bashrc" <<'BASH'
+function claude { command claude "$@"; }
+BASH
+  local output
+  output=$(_run init b 2>&1)
+  if ! printf '%s\n' "$output" | grep -q "Detected: 'claude' is a shell function"; then
+    echo "expected 'function claude {...}' to be detected, got:"
+    printf '%s\n' "$output"
+    _teardown; return 1
+  fi
+  _teardown
+}
+
+test_init_ignores_commented_claude_function() {
+  _setup
+  cat > "$TEST_HOME/.zshrc" <<'ZSH'
+# claude() { command claude "$@" }
+# function claude { :; }
+ZSH
+  local output
+  output=$(_run init b 2>&1)
+  if printf '%s\n' "$output" | grep -q "Detected: 'claude' is a shell function"; then
+    echo "should not detect wrapper inside comments, got:"
+    printf '%s\n' "$output"
+    _teardown; return 1
+  fi
+  if ! printf '%s\n' "$output" | grep -q "alias claude-b="; then
+    echo "expected alias suggestion fallback"
+    _teardown; return 1
+  fi
+  _teardown
+}
+
 test_init_skips_missing_source_items() {
   _setup
   # Main dir has no plugins/ dir at all — plugins is declared in shared list

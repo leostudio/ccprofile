@@ -74,6 +74,8 @@ claude          # subscription A
 claude-work     # subscription B
 ```
 
+> **Note**: if your `claude` is wrapped by a shell function (e.g. to inject a proxy, mTLS certs, or custom env vars), the suggested `alias claude-work='... command claude'` **will not inherit that wrapper** — `command` skips functions and runs the binary directly. See [Troubleshooting](#troubleshooting) for how to use a function instead.
+
 ### Commands
 
 ```
@@ -148,6 +150,44 @@ CLAUDE_CONFIG_DIR=~/.claude-work claude auth status
 # Verify health:
 ccprofile doctor work
 ```
+
+## Troubleshooting
+
+### OAuth login hangs or times out (15s) on a new profile
+
+Symptoms: browser authorization succeeds, but back in the terminal you see
+`OAuth error: timeout of 15000ms exceeded`. The default profile works fine.
+
+Root cause: your `claude` is a shell **function** (not the raw binary), typically
+used to inject proxy / mTLS / custom env vars. ccprofile's suggested alias ends
+in `command claude`, which intentionally skips functions and aliases — this
+avoids NVM path issues, but also bypasses your wrapper. The new profile has
+no cached token, so it hits the Claude token endpoint directly, without your
+proxy, and times out.
+
+Check if you're in this situation:
+
+```bash
+declare -f claude          # if this prints a function body, you are
+```
+
+Fix: define the new profile as a function too, reusing the same env injection:
+
+```zsh
+# ~/.zshrc — suppose your existing wrapper looks like this:
+_claude_proxy_env=(
+  HTTPS_PROXY=http://127.0.0.1:7897
+  HTTP_PROXY=http://127.0.0.1:7897
+  # ...
+)
+claude()      { env "${_claude_proxy_env[@]}" command claude "$@" }
+
+# Then define each profile the same way, just add CLAUDE_CONFIG_DIR:
+claude-work() { env "${_claude_proxy_env[@]}" CLAUDE_CONFIG_DIR="$HOME/.claude-work" command claude "$@" }
+```
+
+The key is: `command claude` at the end (not recursive), but wrapped in your
+function so the env vars still get injected.
 
 ## Design decisions
 
