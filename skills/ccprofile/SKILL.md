@@ -40,6 +40,8 @@ cd ccprofile
 
 Requires: macOS, bash, python3 (for JSON parsing — preinstalled on macOS).
 
+**Updating**: `cd <clone-dir> && git pull`. No need to re-run `./install.sh` — `~/.local/bin/ccprofile` is a symlink into the repo, so pulls take effect immediately.
+
 ## Core workflow
 
 ### Step 1: Verify the default profile is logged in

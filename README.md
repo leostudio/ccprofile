@@ -48,6 +48,15 @@ cd ccprofile
 
 This symlinks `bin/ccprofile` into `~/.local/bin/`. No shell config changes, no package manager.
 
+### Updating
+
+```bash
+cd <path-to>/ccprofile
+git pull
+```
+
+No need to re-run `./install.sh`: `~/.local/bin/ccprofile` is a symlink into the repo, so `git pull` takes effect immediately.
+
 ## Usage
 
 ```bash
