@@ -5,7 +5,7 @@
 # https://github.com/leostudio/ccprofile
 set -euo pipefail
 
-readonly CCPROFILE_VERSION="0.1.0"
+readonly CCPROFILE_VERSION="0.1.1"
 
 # Resolve the lib directory relative to this script, following symlinks.
 resolve_script_dir() {

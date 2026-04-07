@@ -16,6 +16,11 @@
 # Always safe to share. This is the primary reason to run multiple profiles.
 SHARED_TOOLCHAIN=(
   "settings.json"
+  "settings.local.json"  # src/utils/settings/settings.ts:298-306 — project-local
+                         # override (gitignored). Appears under ~/.claude/ only when
+                         # `claude` is run from $HOME, where the project's
+                         # .claude/settings.local.json coincides with the config
+                         # home. Account-neutral; treat like settings.json.
   "CLAUDE.md"
   "commands"
   "skills"
@@ -30,6 +35,9 @@ SHARED_CACHES=(
   "cache"
   "chrome"
   "ide"
+  "image-cache"  # src/utils/imageStore.ts:9,18-20 — per-session image paste cache,
+                 # keyed by sessionId (UUID). Old session subdirs auto-cleaned on
+                 # startup (lines 129-167). No account state.
 )
 
 # ─── SHARE: personal work content (opt-out via --no-share-*) ─────────────
@@ -66,6 +74,10 @@ ISOLATED_AUTH_ADJACENT=(
   "settings-cache.json"       # remoteManagedSettings cache
   "policyLimits-cache.json"   # policy limits cache
   "mcp-needs-auth-cache.json" # src/services/mcp/client.ts:262
+  "telemetry"                 # src/services/analytics/firstPartyEventLoggingExporter.ts:44-46
+                              # Retry queue for failed first-party events. Events
+                              # carry account/org auth context, so sharing would
+                              # cause wrong-account attribution on retry.
 )
 
 # ─── ISOLATE: concurrent-run state ────────────────────────────────────────

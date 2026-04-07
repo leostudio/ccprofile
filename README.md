@@ -99,10 +99,10 @@ Run `ccprofile shared-list` for the live version. Here's the summary:
 ### ✓ Shared (symlinked)
 
 **Toolchain config** — the primary reason to run multiple profiles:
-- `settings.json`, `CLAUDE.md`, `commands/`, `skills/`, `plugins/`, `statusline-command.sh`, `.gitignore`
+- `settings.json`, `settings.local.json`, `CLAUDE.md`, `commands/`, `skills/`, `plugins/`, `statusline-command.sh`, `.gitignore`
 
 **Generic caches** — no per-account state:
-- `cache/`, `chrome/`, `ide/`
+- `cache/`, `chrome/`, `ide/`, `image-cache/`
 
 **Personal work content** — default shared, opt-out via `--no-share-*`:
 - `projects/`, `history.jsonl`, `file-history/`, `paste-cache/`, `plans/`, `todos/`, `shell-snapshots/`, `session-env/`, `backups/`
@@ -127,6 +127,7 @@ Run `ccprofile shared-list` for the live version. Here's the summary:
 | `settings-cache.json` | `remoteManagedSettings` cache (per org) |
 | `policyLimits-cache.json` | policy limits (per subscription) |
 | `mcp-needs-auth-cache.json` | `src/services/mcp/client.ts:262` |
+| `telemetry/` | `src/services/analytics/firstPartyEventLoggingExporter.ts:44-46` (failed-event retry queue, carries account auth context) |
 
 **Concurrent-run state** — avoid lock/PID collisions when both profiles run simultaneously:
 - `sessions/`, `tasks/`, `debug/`, `log/`
