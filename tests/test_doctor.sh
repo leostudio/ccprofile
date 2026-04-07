@@ -6,7 +6,8 @@ _setup() {
   export CCPROFILE_HOME_OVERRIDE="$TEST_HOME"
   mkdir -p "$TEST_HOME/.claude"/{skills,plugins,commands}
   touch "$TEST_HOME/.claude"/{CLAUDE.md,settings.json}
-  cat > "$TEST_HOME/.claude/.claude.json" <<'JSON'
+  # .claude.json lives at $HOME/.claude.json (sibling of .claude/), not inside
+  cat > "$TEST_HOME/.claude.json" <<'JSON'
 {"oauthAccount":{"emailAddress":"a@test.com"}}
 JSON
   "$CCPROFILE_BIN" init b > /dev/null
@@ -29,7 +30,7 @@ test_doctor_healthy_profile() {
 test_doctor_detects_symlinked_claude_json() {
   _setup
   # Corrupt the profile by symlinking .claude.json to main's
-  ln -sf "$TEST_HOME/.claude/.claude.json" "$TEST_HOME/.claude-b/.claude.json"
+  ln -sf "$TEST_HOME/.claude.json" "$TEST_HOME/.claude-b/.claude.json"
   if "$CCPROFILE_BIN" doctor b > /tmp/doctor.log 2>&1; then
     cat /tmp/doctor.log
     echo "doctor should fail when .claude.json is a symlink"

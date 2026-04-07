@@ -40,6 +40,24 @@ profile_dir() {
   printf '%s/.claude-%s' "$(ccp_home)" "$1"
 }
 
+# Path to the .claude.json file for a given profile dir.
+#
+# Asymmetry: for the DEFAULT profile (no CLAUDE_CONFIG_DIR), Claude Code
+# resolves getClaudeConfigHomeDir() to $HOME, so .claude.json lives at
+# $HOME/.claude.json — a SIBLING of $HOME/.claude/, not inside it.
+# For named profiles (CLAUDE_CONFIG_DIR=$HOME/.claude-<name>), everything
+# is flat inside the dir, so .claude.json is at $dir/.claude.json.
+#
+# $1 = config dir (main_claude_dir or profile_dir <name>).
+profile_claude_json() {
+  local dir="$1"
+  if [[ "$dir" == "$(main_claude_dir)" ]]; then
+    printf '%s/.claude.json' "$(ccp_home)"
+  else
+    printf '%s/.claude.json' "$dir"
+  fi
+}
+
 # Validate a profile name: alphanumeric plus dash/underscore, not "claude".
 validate_profile_name() {
   local name="$1"
@@ -75,7 +93,8 @@ PY
 # $1 = config dir path. Returns 0 if logged in, 1 otherwise.
 is_logged_in() {
   local dir="$1"
-  local claude_json="$dir/.claude.json"
+  local claude_json
+  claude_json=$(profile_claude_json "$dir")
   [[ -f "$claude_json" ]] || return 1
   local email
   email=$(json_get "$claude_json" "oauthAccount.emailAddress")

@@ -34,7 +34,7 @@ cmd_list() {
   local i email plain_status color
   for i in "${!names[@]}"; do
     if is_logged_in "${paths[$i]}"; then
-      email=$(json_get "${paths[$i]}/.claude.json" "oauthAccount.emailAddress")
+      email=$(json_get "$(profile_claude_json "${paths[$i]}")" "oauthAccount.emailAddress")
       plain_status="logged in"
       color="$C_GREEN"
     else

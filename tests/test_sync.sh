@@ -6,7 +6,8 @@ _setup() {
   export CCPROFILE_HOME_OVERRIDE="$TEST_HOME"
   mkdir -p "$TEST_HOME/.claude"/{skills,plugins,commands}
   touch "$TEST_HOME/.claude"/{CLAUDE.md,settings.json}
-  cat > "$TEST_HOME/.claude/.claude.json" <<'JSON'
+  # .claude.json lives at $HOME/.claude.json (sibling of .claude/), not inside
+  cat > "$TEST_HOME/.claude.json" <<'JSON'
 {"oauthAccount":{"emailAddress":"a@test.com"}}
 JSON
   "$CCPROFILE_BIN" init b > /dev/null

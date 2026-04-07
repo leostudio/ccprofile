@@ -34,7 +34,7 @@ cmd_init() {
   Run 'claude' once to create it."
 
   is_logged_in "$main_dir" \
-    || die "Main profile is not logged in ($main_dir/.claude.json has no oauthAccount).
+    || die "Main profile is not logged in ($(profile_claude_json "$main_dir") has no oauthAccount).
   Run 'claude' and login first."
 
   [[ -e "$profile" ]] && die "Profile already exists: $profile

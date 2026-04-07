@@ -6,7 +6,8 @@ _setup() {
   export CCPROFILE_HOME_OVERRIDE="$TEST_HOME"
   mkdir -p "$TEST_HOME/.claude"/{skills,plugins,commands,projects}
   touch "$TEST_HOME/.claude"/{CLAUDE.md,settings.json,history.jsonl}
-  cat > "$TEST_HOME/.claude/.claude.json" <<'JSON'
+  # .claude.json lives at $HOME/.claude.json (sibling of .claude/), not inside
+  cat > "$TEST_HOME/.claude.json" <<'JSON'
 {"oauthAccount":{"emailAddress":"a@test.com","subscriptionType":"pro"}}
 JSON
 }
@@ -93,7 +94,7 @@ test_init_rejects_reserved_name() {
 test_init_rejects_when_main_not_logged_in() {
   _setup
   # Remove the oauthAccount to simulate not logged in
-  echo '{}' > "$TEST_HOME/.claude/.claude.json"
+  echo '{}' > "$TEST_HOME/.claude.json"
   if _run init b > /dev/null 2>&1; then
     echo "init should fail when main not logged in"
     _teardown; return 1
