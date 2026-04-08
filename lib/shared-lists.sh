@@ -25,7 +25,13 @@ SHARED_TOOLCHAIN=(
   "commands"
   "skills"
   "plugins"
-  "statusline-command.sh"
+  "statusline-command.sh"   # Canonical filename written by `/statusline` setup agent
+                            # (src/tools/AgentTool/built-in/statuslineSetup.ts:114).
+  "statusline.sh"           # Common alternative name. The `statusLine` setting in
+                            # settings.json is just a command path, so users / skills
+                            # are free to pick any filename — `statusline.sh` is the
+                            # other one we've seen in the wild. Account-neutral shell
+                            # script, same treatment as statusline-command.sh.
   ".gitignore"
 )
 
@@ -90,6 +96,19 @@ ISOLATED_CONCURRENT=(
   "log"
 )
 
+# ─── IGNORE: external (not Claude Code) ───────────────────────────────────
+# Files/dirs that other tools (e.g. Claude Desktop) drop under ~/.claude/
+# but that Claude Code itself never reads or writes. ccprofile deliberately
+# does NOT manage these — it neither symlinks them (so it can't break the
+# external tool) nor enforces isolation (since they have no relation to
+# Claude Code's account state). They're listed here purely so `doctor`'s
+# unknown-item scan stops warning about them.
+IGNORED_EXTERNAL=(
+  "downloads"   # Not referenced anywhere in Claude Code source. Most likely
+                # written by Claude Desktop (the macOS app), which shares the
+                # ~/.claude/ namespace but is otherwise unrelated.
+)
+
 # ─── Helper: resolve share list given --no-share-* flags ──────────────────
 # Args:
 #   $1 — "yes"/"no" for share-projects
@@ -123,7 +142,7 @@ all_isolated_items() {
   done
 }
 
-# Prints every item classified in any of the six lists (one per line).
+# Prints every item classified in any of the seven lists (one per line).
 all_known_items() {
   local item
   for item in \
@@ -132,12 +151,13 @@ all_known_items() {
     "${SHARED_PERSONAL[@]}" \
     "${ISOLATED_IDENTITY[@]}" \
     "${ISOLATED_AUTH_ADJACENT[@]}" \
-    "${ISOLATED_CONCURRENT[@]}"; do
+    "${ISOLATED_CONCURRENT[@]}" \
+    "${IGNORED_EXTERNAL[@]}"; do
     printf '%s\n' "$item"
   done
 }
 
-# is_known <item> — true if item is classified in any of the six lists.
+# is_known <item> — true if item is classified in any of the seven lists.
 # Note: linear scan rather than associative-array lookup, because this project
 # targets macOS's default bash 3.2 which has no associative arrays.
 is_known() {
@@ -148,7 +168,8 @@ is_known() {
     "${SHARED_PERSONAL[@]}" \
     "${ISOLATED_IDENTITY[@]}" \
     "${ISOLATED_AUTH_ADJACENT[@]}" \
-    "${ISOLATED_CONCURRENT[@]}"; do
+    "${ISOLATED_CONCURRENT[@]}" \
+    "${IGNORED_EXTERNAL[@]}"; do
     [[ "$item" == "$needle" ]] && return 0
   done
   return 1

@@ -25,7 +25,7 @@ tests/test_*.sh        tests use CCPROFILE_HOME_OVERRIDE + mktemp sandboxes
 
 ## The classification is the product
 
-`lib/shared-lists.sh` is the heart of the project. Six arrays:
+`lib/shared-lists.sh` is the heart of the project. Seven arrays:
 
 | Array | Meaning |
 |---|---|
@@ -35,13 +35,19 @@ tests/test_*.sh        tests use CCPROFILE_HOME_OVERRIDE + mktemp sandboxes
 | `ISOLATED_IDENTITY` | Account identity (`.claude.json`, `.credentials.json`, `config.json`) |
 | `ISOLATED_AUTH_ADJACENT` | Per-account caches (statsig, usage-data, stats-cache, …) |
 | `ISOLATED_CONCURRENT` | Runtime state (sessions, tasks, debug, log) |
+| `IGNORED_EXTERNAL` | Not Claude Code at all (e.g. Claude Desktop's `downloads/`). Neither symlinked nor enforced — only listed so `doctor` stops warning. |
 
 **When Claude Code adds a new top-level file/dir to `~/.claude/`:**
-1. Read its source code to classify it into one of these 6 buckets
+1. Read its source code to classify it into one of the 6 Claude-Code-managed buckets
 2. Add to the corresponding array in `lib/shared-lists.sh`
 3. `doctor` will automatically include it in health checks
 4. `init` and `sync` will pick it up on next run
 5. Update README's "File classification" section if it's noteworthy
+
+**When you find an item Claude Code source does NOT reference:**
+- Verify with `grep` against the local Claude Code checkout (see "Source code references" below)
+- If genuinely not Claude Code's, add to `IGNORED_EXTERNAL` with a comment naming the suspected origin
+- Do NOT speculatively classify it into a managed bucket — if you're wrong, you'll either leak account state (false-share) or break a real tool (false-isolate)
 
 **`doctor`'s unknown-item detection** walks the main profile and reports any top-level entry not in any array, so failing to update `shared-lists.sh` won't silently break things — it'll show up as a warning.
 

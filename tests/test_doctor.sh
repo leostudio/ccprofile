@@ -68,3 +68,16 @@ test_doctor_warns_on_unknown_main_item() {
   }
   _teardown
 }
+
+test_doctor_ignores_external_items() {
+  _setup
+  # `downloads` is in IGNORED_EXTERNAL — doctor should NOT warn about it
+  mkdir "$TEST_HOME/.claude/downloads"
+  "$CCPROFILE_BIN" doctor b > /tmp/doctor.log 2>&1 || true
+  if grep -q "downloads" /tmp/doctor.log; then
+    cat /tmp/doctor.log
+    echo "doctor should not warn about IGNORED_EXTERNAL items"
+    _teardown; return 1
+  fi
+  _teardown
+}

@@ -99,7 +99,7 @@ Run `ccprofile shared-list` for the live version. Here's the summary:
 ### ✓ Shared (symlinked)
 
 **Toolchain config** — the primary reason to run multiple profiles:
-- `settings.json`, `settings.local.json`, `CLAUDE.md`, `commands/`, `skills/`, `plugins/`, `statusline-command.sh`, `.gitignore`
+- `settings.json`, `settings.local.json`, `CLAUDE.md`, `commands/`, `skills/`, `plugins/`, `statusline-command.sh`, `statusline.sh`, `.gitignore`
 
 **Generic caches** — no per-account state:
 - `cache/`, `chrome/`, `ide/`, `image-cache/`
@@ -131,6 +131,12 @@ Run `ccprofile shared-list` for the live version. Here's the summary:
 
 **Concurrent-run state** — avoid lock/PID collisions when both profiles run simultaneously:
 - `sessions/`, `tasks/`, `debug/`, `log/`
+
+### − Ignored (external, neither shared nor isolated)
+
+Files written by tools other than Claude Code (e.g. Claude Desktop) that happen to live under `~/.claude/`. ccprofile deliberately leaves these alone — neither symlinked into new profiles nor enforced as independent — and just suppresses the `doctor` warning so they don't pollute the report.
+
+- `downloads/` — not referenced in Claude Code source; assumed to belong to Claude Desktop or another co-located tool
 
 ## Verifying isolation
 

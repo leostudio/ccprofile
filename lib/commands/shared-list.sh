@@ -36,4 +36,8 @@ cmd_shared_list() {
 
   info "$(bold "✗ ISOLATED — concurrent-run state")"
   for item in "${ISOLATED_CONCURRENT[@]}"; do printf '  %s\n' "$item"; done
+  info ""
+
+  info "$(bold "− IGNORED — external (not Claude Code)") ${C_DIM}(neither shared nor isolated)${C_RESET}"
+  for item in "${IGNORED_EXTERNAL[@]}"; do printf '  %s\n' "$item"; done
 }

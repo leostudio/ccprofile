@@ -203,3 +203,16 @@ test_init_skips_missing_source_items() {
   [[ -L "$TEST_HOME/.claude-b/skills" ]] || { echo "skills should still be linked"; _teardown; return 1; }
   _teardown
 }
+
+test_init_does_not_link_ignored_external_items() {
+  _setup
+  # `downloads` is in IGNORED_EXTERNAL — must not be symlinked even if present
+  mkdir "$TEST_HOME/.claude/downloads"
+  touch "$TEST_HOME/.claude/downloads/file.zip"
+  _run init b > /dev/null
+  if [[ -e "$TEST_HOME/.claude-b/downloads" ]]; then
+    echo "IGNORED_EXTERNAL items must not be linked into the new profile"
+    _teardown; return 1
+  fi
+  _teardown
+}
