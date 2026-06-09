@@ -65,8 +65,9 @@ SHARED_PERSONAL=(
 # Contain oauthAccount / subscriptionType / OAuth tokens. Never symlink.
 ISOLATED_IDENTITY=(
   ".claude.json"        # src/utils/env.ts:14 getGlobalClaudeFile()
+  ".config.json"        # legacy fallback in getGlobalClaudeFile()
   ".credentials.json"   # src/utils/secureStorage/plainTextStorage.ts:15
-  "config.json"         # legacy fallback in getGlobalClaudeFile()
+  "config.json"         # legacy/current-version account config shape
 )
 
 # ─── ISOLATE: auth-adjacent caches ────────────────────────────────────────
@@ -77,13 +78,119 @@ ISOLATED_AUTH_ADJACENT=(
   "stats-cache.json"          # per-account usage cache
   "statsig"                   # feature-flag bucketing by accountID
   "usage-data"                # local usage tracking
+  "remote-settings.json"      # remoteManagedSettings cache
+  "policy-limits.json"        # policy limits cache
   "settings-cache.json"       # remoteManagedSettings cache
   "policyLimits-cache.json"   # policy limits cache
   "mcp-needs-auth-cache.json" # src/services/mcp/client.ts:262
+  "daemon-auth-status.json"   # auth daemon status/cooldown state
+  "daemon-auth-cooldown"
   "telemetry"                 # src/services/analytics/firstPartyEventLoggingExporter.ts:44-46
                               # Retry queue for failed first-party events. Events
                               # carry account/org auth context, so sharing would
                               # cause wrong-account attribution on retry.
+)
+
+# ─── CLEAN: top-level JSON keys that carry account/local identity state ───
+# Used by `ccprofile clean-account` to preserve project/history/toolchain
+# config while removing local state that should not survive an account switch.
+ACCOUNT_JSON_CLEAN_KEYS=(
+  "oauthAccount"
+  "userID"
+  "anonymousId"
+  "githubRepoPaths"
+  "btwUseCount"
+  "promptQueueUseCount"
+  "tipsHistory"
+  "cachedChangelog"
+  "voiceNoticeSeenCount"
+  "skillUsage"
+  "toolUsage"
+  "hasShownOpus45Notice"
+  "primaryApiKey"
+  "hasAvailableSubscription"
+  "hasOpusPlanDefault"
+  "cachedExtraUsageDisabledReason"
+  "cachedGrowthBookFeatures"
+  "cachedStatsigGates"
+  "cachedDynamicConfigs"
+  "clientDataCache"
+  "additionalModelOptionsCache"
+  "metricsStatusCache"
+  "passesEligibilityCache"
+  "overageCreditGrantCache"
+  "overageCreditUpsellSeenCount"
+  "penguinModeOrgEnabled"
+  "subscriptionNoticeCount"
+  "subscriptionUpsellShownCount"
+  "recommendedSubscription"
+  "powerupsUnlocked"
+  "customApiKeyResponses"
+  "claudeCodeFirstTokenDate"
+  "isQualifiedForDataSharing"
+  "s1mAccessCache"
+  "s1mNonSubscriberAccessCache"
+  "hasShownS1MWelcomeV2"
+  "hasShownOpusPlanWelcome"
+  "groveConfigCache"
+  "passesUpsellSeenCount"
+  "hasVisitedPasses"
+  "passesLastSeenRemaining"
+  "startupPrefetchedAt"
+  "lastPlanModeUse"
+  "cachedChromeExtensionInstalled"
+  "chromeExtension"
+  "hasCompletedClaudeInChromeOnboarding"
+  "claudeInChromeDefaultEnabled"
+  "firstStartTime"
+  "claudeAiMcpEverConnected"
+  "bridgeOauthDeadExpiresAt"
+  "bridgeOauthDeadFailCount"
+  "hasVisitedExtraUsage"
+  "hasAcknowledgedCostThreshold"
+  "hasSeenUltraplanTerms"
+  "hasResetAutoModeOptInForDefaultOffer"
+  "opus1mMergeNoticeSeenCount"
+  "opus48LaunchSeenCount"
+  "modelSwitchCalloutDismissed"
+  "modelSwitchCalloutLastShown"
+  "modelSwitchCalloutVersion"
+  "effortCalloutDismissed"
+  "effortCalloutV2Dismissed"
+  "opusProMigrationComplete"
+  "opusProMigrationTimestamp"
+  "sonnet1m45MigrationComplete"
+  "legacyOpusMigrationTimestamp"
+  "sonnet45To46MigrationTimestamp"
+)
+
+# Per-project usage metrics kept under the top-level `projects` object in
+# .claude.json. They are not conversation history, but Claude Code logs them
+# on next startup as `last_session_*` analytics. Clean these while preserving
+# project trust/MCP approvals and other user-controlled project settings.
+PROJECT_JSON_CLEAN_KEYS=(
+  "lastAPIDuration"
+  "lastAPIDurationWithoutRetries"
+  "lastToolDuration"
+  "lastCost"
+  "lastDuration"
+  "lastLinesAdded"
+  "lastLinesRemoved"
+  "lastTotalInputTokens"
+  "lastTotalOutputTokens"
+  "lastTotalCacheCreationInputTokens"
+  "lastTotalCacheReadInputTokens"
+  "lastTotalWebSearchRequests"
+  "lastFpsAverage"
+  "lastFpsLow1Pct"
+  "lastSessionId"
+  "lastModelUsage"
+  "lastSessionMetrics"
+  "lastGracefulShutdown"
+  "lastVersionBase"
+  "exampleFiles"
+  "exampleFilesGeneratedAt"
+  "activeWorktreeSession"
 )
 
 # ─── ISOLATE: concurrent-run state ────────────────────────────────────────
@@ -94,6 +201,9 @@ ISOLATED_CONCURRENT=(
   "tasks"
   "debug"
   "log"
+  "daemon"
+  "daemon.lock"
+  "daemon.status.json"
 )
 
 # ─── IGNORE: external (not Claude Code) ───────────────────────────────────

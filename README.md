@@ -90,7 +90,50 @@ ccprofile sync <name>           Re-sync symlinks (after installing new skills in
 ccprofile doctor <name>         Verify profile health
 ccprofile shared-list           Show full classification with source evidence
 ccprofile rm <name>             Delete a profile (keychain tokens must be cleared manually)
+ccprofile clean-account [name]  Clean account-local state (dry-run by default)
+ccprofile restore-account [name] Restore a clean-account backup
 ```
+
+### Cleaning account-local state
+
+`clean-account` is a precise cleanup for switching or resetting a Claude Code
+account without deleting personal work content.
+
+```bash
+# Preview what would be cleaned in the default profile:
+ccprofile clean-account
+
+# Apply the cleanup for the default profile:
+ccprofile clean-account --apply
+
+# Apply it for a named profile:
+ccprofile clean-account work --apply
+
+# Rare opt-out: preserve matching macOS Keychain OAuth/API credentials:
+ccprofile clean-account --apply --no-keychain
+
+# Restore from a clean-account backup:
+ccprofile restore-account --backup-dir ~/.claude_account_cleanup-YYYYMMDD-HHMMSS --apply
+```
+
+It removes account/subscription/cache keys from `.claude.json` and legacy/custom
+OAuth config variants, quarantines auth-adjacent caches such as `telemetry/`,
+`statsig/`, `usage-data/`, `remote-settings.json`, `policy-limits.json`, and
+`mcp-needs-auth-cache.json`, and backs everything up under
+`~/.claude_account_cleanup-YYYYMMDD-HHMMSS/`.
+
+It preserves `projects/`, `history.jsonl`, `file-history/`, `CLAUDE.md`,
+`rules/`, `skills/`, `commands/`, `plugins/`, `settings.json`, and generic
+`cache/`.
+
+Keychain credentials are account state and are deleted by default with
+`--apply`. They cannot be backed up; pass `--no-keychain` only when you
+explicitly want to preserve the matching `Claude Code...` OAuth/API key entries
+for the profile.
+
+`restore-account` restores files and JSON originals from the backup directory.
+It cannot restore Keychain credentials because macOS Keychain secrets are not
+exported into the backup.
 
 ## File classification
 

@@ -5,7 +5,7 @@
 # https://github.com/leostudio/ccprofile
 set -euo pipefail
 
-readonly CCPROFILE_VERSION="0.1.1"
+readonly CCPROFILE_VERSION="0.1.2"
 
 # Resolve the lib directory relative to this script, following symlinks.
 resolve_script_dir() {
@@ -41,6 +41,10 @@ source "$LIB_DIR/commands/doctor.sh"
 source "$LIB_DIR/commands/shared-list.sh"
 # shellcheck source=../lib/commands/rm.sh
 source "$LIB_DIR/commands/rm.sh"
+# shellcheck source=../lib/commands/clean-account.sh
+source "$LIB_DIR/commands/clean-account.sh"
+# shellcheck source=../lib/commands/restore-account.sh
+source "$LIB_DIR/commands/restore-account.sh"
 
 print_help() {
   cat <<EOF
@@ -53,6 +57,8 @@ Usage:
   ccprofile doctor <name>         Verify profile health
   ccprofile shared-list           Show the classification (shared vs isolated)
   ccprofile rm <name>             Delete a profile
+  ccprofile clean-account [name]  Clean account-local state (dry-run by default)
+  ccprofile restore-account [name] Restore a clean-account backup
   ccprofile help                  Show this help
   ccprofile version               Show version
 
@@ -83,6 +89,8 @@ main() {
     doctor)         cmd_doctor "$@" ;;
     shared-list)    cmd_shared_list "$@" ;;
     rm|remove)      cmd_rm "$@" ;;
+    clean-account)  cmd_clean_account "$@" ;;
+    restore-account) cmd_restore_account "$@" ;;
     help|-h|--help) print_help ;;
     version|--version) printf 'ccprofile %s\n' "$CCPROFILE_VERSION" ;;
     *)
