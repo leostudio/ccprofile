@@ -15,7 +15,7 @@ Several open-source tools already tackle this problem. They fall into two camps,
 | `CLAUDE_CONFIG_DIR` + symlinks | [ukogan/claude-account-switcher](https://github.com/ukogan/claude-account-switcher) | Only symlinks `settings` / `commands` / `MCP` / `hooks`. Misses `skills/`, `plugins/`, `projects/`, `history.jsonl`, and **completely ignores auth-adjacent caches** like `statsig/`, `usage-data/`, `stats-cache.json`, `settings-cache.json`, `policyLimits-cache.json`, `mcp-needs-auth-cache.json`. Leaving these shared causes subtle feature-flag leakage and usage-tracking confusion. |
 | Credential file swap | [realiti4/claude-swap](https://github.com/realiti4/claude-swap), [ming86/cc-account-switcher](https://github.com/ming86/cc-account-switcher) | Can't run two accounts concurrently. Swap has a risk window. Mutable "active account" state. |
 
-**ccprofile's contribution**: a file classification derived from reading Claude Code source code, not guesswork. Every shared/isolated decision points back to a specific file in the Claude Code repo as evidence.
+**ccprofile's contribution**: a file classification derived primarily from reading Claude Code source code, with conservative quarantine for newly observed runtime artifacts. Shared items require evidence that they are account-neutral; suspicious auth/runtime files stay isolated and `clean-account` backs them up instead of deleting them.
 
 ## How it works
 
@@ -119,12 +119,16 @@ ccprofile restore-account --backup-dir ~/.claude_account_cleanup-YYYYMMDD-HHMMSS
 It removes account/subscription/cache keys from `.claude.json` and legacy/custom
 OAuth config variants, quarantines auth-adjacent caches such as `telemetry/`,
 `statsig/`, `usage-data/`, `remote-settings.json`, `policy-limits.json`, and
-`mcp-needs-auth-cache.json`, and backs everything up under
+`mcp-needs-auth-cache.json`, quarantines background/runtime state such as
+`sessions/`, `tasks/`, `jobs/`, `daemon.log`, `scheduled_tasks.json`,
+`worktrees/`, `checkpoints/`, and `mailbox/`, quarantines Claude Desktop user
+data under `~/Library`, and backs everything up under
 `~/.claude_account_cleanup-YYYYMMDD-HHMMSS/`.
 
 It preserves `projects/`, `history.jsonl`, `file-history/`, `CLAUDE.md`,
 `rules/`, `skills/`, `commands/`, `plugins/`, `settings.json`, and generic
-`cache/`.
+`cache/`. It does not remove `/Applications/Claude.app`, modify shell configs,
+change Git config, or rewrite machine identifiers.
 
 Keychain credentials are account state and are deleted by default with
 `--apply`. They cannot be backed up; pass `--no-keychain` only when you
@@ -173,7 +177,7 @@ Run `ccprofile shared-list` for the live version. Here's the summary:
 | `telemetry/` | `src/services/analytics/firstPartyEventLoggingExporter.ts:44-46` (failed-event retry queue, carries account auth context) |
 
 **Concurrent-run state** — avoid lock/PID collisions when both profiles run simultaneously:
-- `sessions/`, `tasks/`, `debug/`, `log/`
+- `sessions/`, `tasks/`, `debug/`, `log/`, `jobs/`, `daemon/`, `daemon.lock`, `daemon.status.json`, `daemon.log`, `scheduled_tasks.json`, `scheduled_tasks.lock`, `worktrees/`, `checkpoints/`, `mailbox/`, `agent-registry.json`, `assistant-daemon-state.json`, `first-run`, `routines/`, `teams/`
 
 ### − Ignored (external, neither shared nor isolated)
 

@@ -24,13 +24,17 @@ What is cleaned:
   - legacy/custom OAuth config JSON variants, cleaned field-by-field
   - .credentials.json and legacy account config files
   - auth-adjacent caches such as statsig/, telemetry/, usage-data/
+  - background/runtime state such as sessions/, tasks/, jobs/, daemon.log
+  - scheduled task state, Claude-managed worktrees/checkpoints/mailbox state
+  - Claude Desktop user data under ~/Library on macOS
   - ide/*.lock local editor bridge tokens
-  - teams/ is quarantined if present
+  - conservative legacy artifacts such as hsettings.json
 
 What is preserved:
   - projects/, history.jsonl, file-history/, CLAUDE.md
   - rules/, skills/, commands/, plugins/
   - settings.json and generic cache/
+  - /Applications/Claude.app, shell configs, Git config, machine identifiers
 
 Keychain entries are account credentials and are deleted by default with
 --apply. They cannot be backed up; use --no-keychain to preserve them.
@@ -246,6 +250,27 @@ _clean_account_move_ide_locks() {
   done
 }
 
+_clean_account_move_desktop_state() {
+  local home="$1" backup_dir="$2" apply="$3"
+  [[ "$(uname -s)" == "Darwin" ]] || return 0
+
+  local rel path
+  for rel in \
+    "Library/Application Support/Claude" \
+    "Library/Caches/com.anthropic.claude" \
+    "Library/Caches/Claude" \
+    "Library/Saved Application State/com.anthropic.claude.savedState" \
+    "Library/Preferences/com.anthropic.claude.plist" \
+    "Library/Logs/Claude"; do
+    path="$home/$rel"
+    if [[ "$apply" == "yes" ]]; then
+      _clean_account_move_to_backup "$path" "$backup_dir" "$rel"
+    elif [[ -e "$path" || -L "$path" ]]; then
+      info "Would move to backup: $path"
+    fi
+  done
+}
+
 cmd_clean_account() {
   local profile="default" apply="no" force="no" backup_dir="" clean_keychain="yes"
   local profile_given="no"
@@ -312,9 +337,10 @@ cmd_clean_account() {
     [[ "$reply" =~ ^[Yy]$ ]] || { info "Aborted."; return 0; }
   fi
 
-  local json_backup_dir claude_backup_dir
+  local json_backup_dir claude_backup_dir desktop_backup_dir
   json_backup_dir="$backup_dir/json-originals"
   claude_backup_dir="$backup_dir/claude"
+  desktop_backup_dir="$backup_dir/desktop"
 
   if [[ "$profile" == "default" ]]; then
     _clean_account_json_variants "$home" "$json_backup_dir" "home" "$apply"
@@ -328,11 +354,8 @@ cmd_clean_account() {
     ".credentials.json" \
     "config.json" \
     "${ISOLATED_AUTH_ADJACENT[@]}" \
-    "daemon" \
-    "daemon.lock" \
-    "daemon.status.json" \
-    ".last-update-result.json" \
-    "teams"; do
+    "${ISOLATED_CONCURRENT[@]}" \
+    ".last-update-result.json"; do
     path="$config_dir/$item"
     if [[ "$apply" == "yes" ]]; then
       _clean_account_move_to_backup "$path" "$claude_backup_dir"
@@ -343,6 +366,7 @@ cmd_clean_account() {
 
   _clean_account_move_matching_backups "$config_dir" "$claude_backup_dir" "$apply"
   _clean_account_move_ide_locks "$config_dir" "$claude_backup_dir" "$apply"
+  _clean_account_move_desktop_state "$home" "$desktop_backup_dir" "$apply"
 
   _clean_account_delete_keychain_items "$profile" "$config_dir" "$apply" "$clean_keychain"
 

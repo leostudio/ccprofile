@@ -2,7 +2,7 @@
 #
 # File classification lists for Claude Code config directories.
 #
-# These lists are derived from source-code analysis of Claude Code:
+# These lists are derived from source-code/runtime analysis of Claude Code:
 #   - src/utils/env.ts              → getGlobalClaudeFile()
 #   - src/utils/envUtils.ts         → getClaudeConfigHomeDir()
 #   - src/utils/secureStorage/      → OAuth token storage
@@ -10,7 +10,9 @@
 #   - src/services/mcp/client.ts    → mcp-needs-auth-cache.json
 #
 # Each item below is either safely shareable across profiles (symlink) or
-# must stay independent per profile (real file/dir).
+# must stay independent per profile (real file/dir). A few conservative
+# cleanup targets are isolated even when the exact writer is not yet proven;
+# clean-account moves them to backup rather than deleting them.
 
 # ─── SHARE: toolchain configuration ──────────────────────────────────────
 # Always safe to share. This is the primary reason to run multiple profiles.
@@ -75,6 +77,11 @@ ISOLATED_IDENTITY=(
 # These caches are keyed off account/org/subscription and WILL cause
 # confusing bugs if shared.
 ISOLATED_AUTH_ADJACENT=(
+  "hsettings.json"            # Conservative cleanup target seen in reset
+                              # scripts. Treat as account-adjacent when present:
+                              # clean-account quarantines it with a backup, and
+                              # profiles should never share unknown auth/privacy
+                              # settings files.
   "stats-cache.json"          # per-account usage cache
   "statsig"                   # feature-flag bucketing by accountID
   "usage-data"                # local usage tracking
@@ -201,9 +208,21 @@ ISOLATED_CONCURRENT=(
   "tasks"
   "debug"
   "log"
+  "jobs"                      # background daemon job/supervisor state
   "daemon"
   "daemon.lock"
   "daemon.status.json"
+  "daemon.log"
+  "scheduled_tasks.json"      # durable scheduler state; profile-local
+  "scheduled_tasks.lock"
+  "worktrees"                 # Claude-managed isolated worktrees/checkpoints
+  "checkpoints"
+  "mailbox"                   # teammate/permission-sync mailbox state
+  "agent-registry.json"
+  "assistant-daemon-state.json"
+  "first-run"
+  "routines"                  # contains runtime .state/ in recent Claude Code
+  "teams"                     # experimental agent/team runtime state
 )
 
 # ─── IGNORE: external (not Claude Code) ───────────────────────────────────

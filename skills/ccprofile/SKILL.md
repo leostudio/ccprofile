@@ -28,7 +28,7 @@ Creates per-subscription profile directories (`~/.claude-work/`, `~/.claude-pers
 **Key benefits over alternatives**:
 1. **Concurrent runs**: both subscriptions can run simultaneously in two terminals
 2. **No credential swapping**: each profile has its own Keychain entry (via `CLAUDE_CONFIG_DIR` hash) — nothing gets mutated during switching
-3. **Precise classification**: derived from reading Claude Code source code, not guesswork — correctly isolates 6+ auth-adjacent caches (`statsig/`, `usage-data/`, `stats-cache.json`, `settings-cache.json`, `policyLimits-cache.json`, `mcp-needs-auth-cache.json`) that other tools leave shared
+3. **Precise classification**: derived primarily from Claude Code source/runtime evidence, with conservative quarantine for suspicious auth/runtime files — correctly isolates 6+ auth-adjacent caches (`statsig/`, `usage-data/`, `stats-cache.json`, `settings-cache.json`, `policyLimits-cache.json`, `mcp-needs-auth-cache.json`) that other tools leave shared
 
 ## Installation
 

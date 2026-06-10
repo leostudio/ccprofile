@@ -7,7 +7,8 @@ restore_account_usage() {
   cat <<'EOF'
 Usage: ccprofile restore-account [default|<name>] --backup-dir <dir> [flags]
 
-Restore account-local Claude Code state from a clean-account backup.
+Restore Claude Code account-local state and Claude Desktop user data from a
+clean-account backup.
 
 Default mode is a dry run. Pass --apply to make changes.
 
@@ -104,6 +105,18 @@ _restore_account_claude_tree() {
   done < <(find "$claude_backup_dir" -mindepth 1 -print0)
 }
 
+_restore_account_desktop_tree() {
+  local desktop_backup_dir="$1" home="$2" overwrite_dir="$3" apply="$4"
+  [[ -d "$desktop_backup_dir" ]] || return 0
+
+  local path rel dest
+  while IFS= read -r -d '' path; do
+    rel="${path#$desktop_backup_dir/}"
+    dest="$home/$rel"
+    _restore_account_copy_path "$path" "$dest" "desktop/$rel" "$overwrite_dir" "$apply"
+  done < <(find "$desktop_backup_dir" -mindepth 1 -print0)
+}
+
 cmd_restore_account() {
   local profile="default" apply="no" force="no" backup_dir=""
   local profile_given="no"
@@ -145,9 +158,10 @@ cmd_restore_account() {
 
   mkdir -p "$config_dir"
 
-  local json_backup_dir claude_backup_dir overwrite_dir
+  local json_backup_dir claude_backup_dir desktop_backup_dir overwrite_dir
   json_backup_dir="$backup_dir/json-originals"
   claude_backup_dir="$backup_dir/claude"
+  desktop_backup_dir="$backup_dir/desktop"
   overwrite_dir="$backup_dir/restore-overwritten-$(date +%Y%m%d-%H%M%S)"
 
   info "Profile: $profile_label"
@@ -175,6 +189,7 @@ cmd_restore_account() {
   fi
 
   _restore_account_claude_tree "$claude_backup_dir" "$config_dir" "$overwrite_dir" "$apply"
+  _restore_account_desktop_tree "$desktop_backup_dir" "$home" "$overwrite_dir" "$apply"
 
   if [[ "$apply" == "yes" ]]; then
     ok "Account-local restore complete"

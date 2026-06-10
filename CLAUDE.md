@@ -4,7 +4,7 @@ Context for Claude Code agents working on this repo. Read this before editing.
 
 ## What this project is
 
-A bash CLI (`ccprofile`) that manages multiple Claude Code config profiles via `CLAUDE_CONFIG_DIR` + symlinks. The core value proposition is a **precise classification** of which files under `~/.claude/` can be shared across subscriptions and which must stay isolated — derived from reading Claude Code source code, not guesswork.
+A bash CLI (`ccprofile`) that manages multiple Claude Code config profiles via `CLAUDE_CONFIG_DIR` + symlinks. The core value proposition is a **precise classification** of which files under `~/.claude/` can be shared across subscriptions and which must stay isolated — derived primarily from Claude Code source/runtime evidence, with conservative quarantine for suspicious auth/runtime files.
 
 **Audience**: users who have two Claude subscriptions and want to run both on the same Mac without `/logout && /login` churn.
 

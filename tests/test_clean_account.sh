@@ -5,14 +5,42 @@ _setup_clean_default() {
   TEST_HOME=$(mktemp -d)
   export CCPROFILE_HOME_OVERRIDE="$TEST_HOME"
   mkdir -p "$TEST_HOME/.claude"/{projects,skills,telemetry,backups,ide,daemon}
+  mkdir -p "$TEST_HOME/.claude"/{sessions,tasks,debug,log,jobs,worktrees,checkpoints,mailbox,routines,teams}
   touch "$TEST_HOME/.claude/history.jsonl" "$TEST_HOME/.claude/settings.json"
   echo '{"queued":"event"}' > "$TEST_HOME/.claude/telemetry/event.json"
+  echo '{"hidden":"settings"}' > "$TEST_HOME/.claude/hsettings.json"
   echo '{"remote":"settings"}' > "$TEST_HOME/.claude/remote-settings.json"
   echo '{"policy":"limits"}' > "$TEST_HOME/.claude/policy-limits.json"
   echo '{"status":"old"}' > "$TEST_HOME/.claude/daemon-auth-status.json"
   echo 'cooldown' > "$TEST_HOME/.claude/daemon-auth-cooldown"
   echo 'lock' > "$TEST_HOME/.claude/daemon.lock"
   echo '{"status":"running"}' > "$TEST_HOME/.claude/daemon.status.json"
+  echo 'daemon log' > "$TEST_HOME/.claude/daemon.log"
+  echo '[{"prompt":"old"}]' > "$TEST_HOME/.claude/scheduled_tasks.json"
+  echo '{"pid":123}' > "$TEST_HOME/.claude/scheduled_tasks.lock"
+  echo '{"agents":[]}' > "$TEST_HOME/.claude/agent-registry.json"
+  echo '{"state":"old"}' > "$TEST_HOME/.claude/assistant-daemon-state.json"
+  echo 'seen' > "$TEST_HOME/.claude/first-run"
+  echo '{"session":"old"}' > "$TEST_HOME/.claude/sessions/old.json"
+  echo '{"task":"old"}' > "$TEST_HOME/.claude/tasks/old.json"
+  echo 'job' > "$TEST_HOME/.claude/jobs/old"
+  echo 'mail' > "$TEST_HOME/.claude/mailbox/message"
+  echo 'checkpoint' > "$TEST_HOME/.claude/checkpoints/old"
+  echo 'worktree' > "$TEST_HOME/.claude/worktrees/old"
+  echo 'routine' > "$TEST_HOME/.claude/routines/state"
+  echo 'team' > "$TEST_HOME/.claude/teams/old"
+  mkdir -p "$TEST_HOME/Library/Application Support/Claude"
+  mkdir -p "$TEST_HOME/Library/Caches/com.anthropic.claude"
+  mkdir -p "$TEST_HOME/Library/Caches/Claude"
+  mkdir -p "$TEST_HOME/Library/Saved Application State/com.anthropic.claude.savedState"
+  mkdir -p "$TEST_HOME/Library/Preferences"
+  mkdir -p "$TEST_HOME/Library/Logs/Claude"
+  echo '{"desktop":"state"}' > "$TEST_HOME/Library/Application Support/Claude/state.json"
+  echo 'desktop cache' > "$TEST_HOME/Library/Caches/com.anthropic.claude/cache"
+  echo 'desktop cache' > "$TEST_HOME/Library/Caches/Claude/cache"
+  echo 'saved state' > "$TEST_HOME/Library/Saved Application State/com.anthropic.claude.savedState/window"
+  echo 'plist' > "$TEST_HOME/Library/Preferences/com.anthropic.claude.plist"
+  echo 'desktop log' > "$TEST_HOME/Library/Logs/Claude/app.log"
   echo '{"version":"old"}' > "$TEST_HOME/.claude/.last-update-result.json"
   echo '{"authToken":"ide-token","ideName":"vscode"}' > "$TEST_HOME/.claude/ide/vscode.lock"
   echo '{"oauthAccount":{"emailAddress":"backup@example.com"},"projects":{"/repo":{"allowedTools":["Bash"]}}}' > "$TEST_HOME/.claude/backups/.claude.json.backup.20260101"
@@ -160,15 +188,55 @@ test_clean_account_apply_preserves_personal_content_default() {
   [[ -f "$TEST_HOME/.claude/history.jsonl" ]] || { echo "history should remain"; _teardown_clean; return 1; }
   [[ -d "$TEST_HOME/.claude/skills" ]] || { echo "skills should remain"; _teardown_clean; return 1; }
   [[ ! -e "$TEST_HOME/.claude/telemetry" ]] || { echo "telemetry should be moved"; _teardown_clean; return 1; }
+  [[ ! -e "$TEST_HOME/.claude/hsettings.json" ]] || { echo "hsettings should be moved"; _teardown_clean; return 1; }
   [[ ! -e "$TEST_HOME/.claude/remote-settings.json" ]] || { echo "remote settings cache should be moved"; _teardown_clean; return 1; }
   [[ ! -e "$TEST_HOME/.claude/policy-limits.json" ]] || { echo "policy limits cache should be moved"; _teardown_clean; return 1; }
   [[ ! -e "$TEST_HOME/.claude/daemon-auth-status.json" ]] || { echo "daemon auth status should be moved"; _teardown_clean; return 1; }
+  [[ ! -e "$TEST_HOME/.claude/sessions" ]] || { echo "sessions should be moved"; _teardown_clean; return 1; }
+  [[ ! -e "$TEST_HOME/.claude/tasks" ]] || { echo "tasks should be moved"; _teardown_clean; return 1; }
+  [[ ! -e "$TEST_HOME/.claude/jobs" ]] || { echo "jobs should be moved"; _teardown_clean; return 1; }
+  [[ ! -e "$TEST_HOME/.claude/daemon.log" ]] || { echo "daemon log should be moved"; _teardown_clean; return 1; }
+  [[ ! -e "$TEST_HOME/.claude/scheduled_tasks.json" ]] || { echo "scheduled tasks should be moved"; _teardown_clean; return 1; }
+  [[ ! -e "$TEST_HOME/.claude/worktrees" ]] || { echo "worktrees should be moved"; _teardown_clean; return 1; }
+  [[ ! -e "$TEST_HOME/.claude/checkpoints" ]] || { echo "checkpoints should be moved"; _teardown_clean; return 1; }
+  [[ ! -e "$TEST_HOME/.claude/mailbox" ]] || { echo "mailbox should be moved"; _teardown_clean; return 1; }
+  [[ ! -e "$TEST_HOME/.claude/agent-registry.json" ]] || { echo "agent registry should be moved"; _teardown_clean; return 1; }
+  [[ ! -e "$TEST_HOME/.claude/assistant-daemon-state.json" ]] || { echo "assistant daemon state should be moved"; _teardown_clean; return 1; }
+  [[ ! -e "$TEST_HOME/.claude/first-run" ]] || { echo "first-run should be moved"; _teardown_clean; return 1; }
+  [[ ! -e "$TEST_HOME/.claude/routines" ]] || { echo "routines should be moved"; _teardown_clean; return 1; }
+  [[ ! -e "$TEST_HOME/.claude/teams" ]] || { echo "teams should be moved"; _teardown_clean; return 1; }
+  [[ ! -e "$TEST_HOME/Library/Application Support/Claude" ]] || { echo "desktop app support should be moved"; _teardown_clean; return 1; }
+  [[ ! -e "$TEST_HOME/Library/Caches/com.anthropic.claude" ]] || { echo "desktop bundle cache should be moved"; _teardown_clean; return 1; }
+  [[ ! -e "$TEST_HOME/Library/Caches/Claude" ]] || { echo "desktop cache should be moved"; _teardown_clean; return 1; }
+  [[ ! -e "$TEST_HOME/Library/Saved Application State/com.anthropic.claude.savedState" ]] || { echo "desktop saved state should be moved"; _teardown_clean; return 1; }
+  [[ ! -e "$TEST_HOME/Library/Preferences/com.anthropic.claude.plist" ]] || { echo "desktop preferences should be moved"; _teardown_clean; return 1; }
+  [[ ! -e "$TEST_HOME/Library/Logs/Claude" ]] || { echo "desktop logs should be moved"; _teardown_clean; return 1; }
   [[ ! -e "$TEST_HOME/.claude/daemon.lock" ]] || { echo "daemon lock should be moved"; _teardown_clean; return 1; }
   [[ ! -e "$TEST_HOME/.claude/ide/vscode.lock" ]] || { echo "IDE lock should be moved"; _teardown_clean; return 1; }
   [[ ! -e "$TEST_HOME/.claude/backups/.claude.json.backup.20260101" ]] || { echo "config backup should be moved"; _teardown_clean; return 1; }
   [[ -d "$TEST_HOME/backup/claude/telemetry" ]] || { echo "telemetry backup missing"; _teardown_clean; return 1; }
+  [[ -f "$TEST_HOME/backup/claude/hsettings.json" ]] || { echo "hsettings backup missing"; _teardown_clean; return 1; }
   [[ -f "$TEST_HOME/backup/claude/remote-settings.json" ]] || { echo "remote settings backup missing"; _teardown_clean; return 1; }
   [[ -f "$TEST_HOME/backup/claude/policy-limits.json" ]] || { echo "policy limits backup missing"; _teardown_clean; return 1; }
+  [[ -d "$TEST_HOME/backup/claude/sessions" ]] || { echo "sessions backup missing"; _teardown_clean; return 1; }
+  [[ -d "$TEST_HOME/backup/claude/tasks" ]] || { echo "tasks backup missing"; _teardown_clean; return 1; }
+  [[ -d "$TEST_HOME/backup/claude/jobs" ]] || { echo "jobs backup missing"; _teardown_clean; return 1; }
+  [[ -f "$TEST_HOME/backup/claude/daemon.log" ]] || { echo "daemon log backup missing"; _teardown_clean; return 1; }
+  [[ -f "$TEST_HOME/backup/claude/scheduled_tasks.json" ]] || { echo "scheduled tasks backup missing"; _teardown_clean; return 1; }
+  [[ -d "$TEST_HOME/backup/claude/worktrees" ]] || { echo "worktrees backup missing"; _teardown_clean; return 1; }
+  [[ -d "$TEST_HOME/backup/claude/checkpoints" ]] || { echo "checkpoints backup missing"; _teardown_clean; return 1; }
+  [[ -d "$TEST_HOME/backup/claude/mailbox" ]] || { echo "mailbox backup missing"; _teardown_clean; return 1; }
+  [[ -f "$TEST_HOME/backup/claude/agent-registry.json" ]] || { echo "agent registry backup missing"; _teardown_clean; return 1; }
+  [[ -f "$TEST_HOME/backup/claude/assistant-daemon-state.json" ]] || { echo "assistant daemon state backup missing"; _teardown_clean; return 1; }
+  [[ -f "$TEST_HOME/backup/claude/first-run" ]] || { echo "first-run backup missing"; _teardown_clean; return 1; }
+  [[ -d "$TEST_HOME/backup/claude/routines" ]] || { echo "routines backup missing"; _teardown_clean; return 1; }
+  [[ -d "$TEST_HOME/backup/claude/teams" ]] || { echo "teams backup missing"; _teardown_clean; return 1; }
+  [[ -f "$TEST_HOME/backup/desktop/Library/Application Support/Claude/state.json" ]] || { echo "desktop app support backup missing"; _teardown_clean; return 1; }
+  [[ -f "$TEST_HOME/backup/desktop/Library/Caches/com.anthropic.claude/cache" ]] || { echo "desktop bundle cache backup missing"; _teardown_clean; return 1; }
+  [[ -f "$TEST_HOME/backup/desktop/Library/Caches/Claude/cache" ]] || { echo "desktop cache backup missing"; _teardown_clean; return 1; }
+  [[ -f "$TEST_HOME/backup/desktop/Library/Saved Application State/com.anthropic.claude.savedState/window" ]] || { echo "desktop saved state backup missing"; _teardown_clean; return 1; }
+  [[ -f "$TEST_HOME/backup/desktop/Library/Preferences/com.anthropic.claude.plist" ]] || { echo "desktop preferences backup missing"; _teardown_clean; return 1; }
+  [[ -f "$TEST_HOME/backup/desktop/Library/Logs/Claude/app.log" ]] || { echo "desktop logs backup missing"; _teardown_clean; return 1; }
   [[ -f "$TEST_HOME/backup/claude/ide/vscode.lock" ]] || { echo "IDE lock backup missing"; _teardown_clean; return 1; }
   [[ -f "$TEST_HOME/backup/claude/backups/.claude.json.backup.20260101" ]] || { echo "config backup quarantine missing"; _teardown_clean; return 1; }
   [[ -f "$TEST_HOME/backup/json-originals/home-.claude.json" ]] || { echo "json backup missing"; _teardown_clean; return 1; }
@@ -208,6 +276,12 @@ test_restore_account_apply_default() {
   [[ -f "$TEST_HOME/.claude/daemon-auth-status.json" ]] || { echo "daemon auth status should be restored"; _teardown_clean; return 1; }
   [[ -f "$TEST_HOME/.claude/ide/vscode.lock" ]] || { echo "IDE lock should be restored"; _teardown_clean; return 1; }
   [[ -f "$TEST_HOME/.claude/backups/.claude.json.backup.20260101" ]] || { echo "config backup should be restored"; _teardown_clean; return 1; }
+  [[ -f "$TEST_HOME/Library/Application Support/Claude/state.json" ]] || { echo "desktop app support should be restored"; _teardown_clean; return 1; }
+  [[ -f "$TEST_HOME/Library/Caches/com.anthropic.claude/cache" ]] || { echo "desktop bundle cache should be restored"; _teardown_clean; return 1; }
+  [[ -f "$TEST_HOME/Library/Caches/Claude/cache" ]] || { echo "desktop cache should be restored"; _teardown_clean; return 1; }
+  [[ -f "$TEST_HOME/Library/Saved Application State/com.anthropic.claude.savedState/window" ]] || { echo "desktop saved state should be restored"; _teardown_clean; return 1; }
+  [[ -f "$TEST_HOME/Library/Preferences/com.anthropic.claude.plist" ]] || { echo "desktop preferences should be restored"; _teardown_clean; return 1; }
+  [[ -f "$TEST_HOME/Library/Logs/Claude/app.log" ]] || { echo "desktop logs should be restored"; _teardown_clean; return 1; }
   find "$TEST_HOME/backup" -maxdepth 1 -type d -name 'restore-overwritten-*' | grep -q . || {
     echo "overwritten backup dir should be created"
     _teardown_clean; return 1

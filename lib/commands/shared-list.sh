@@ -1,13 +1,14 @@
 # shellcheck shell=bash
 # ccprofile shared-list
 #
-# Print the full classification of what's shared vs isolated, with source
-# code evidence. Useful for audit and review.
+# Print the full classification of what's shared vs isolated. Most entries are
+# backed by source-code evidence; a few conservative runtime artifacts are
+# isolated because false-sharing them is riskier than quarantining with backup.
 
 cmd_shared_list() {
   bold "Claude Code profile file classification"
   info ""
-  info "Based on source analysis of:"
+  info "Based on source/runtime analysis of:"
   info "  src/utils/env.ts, src/utils/envUtils.ts,"
   info "  src/utils/secureStorage/, src/utils/config.ts,"
   info "  src/services/mcp/client.ts"
